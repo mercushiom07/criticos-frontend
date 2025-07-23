@@ -16,7 +16,8 @@ export function limpiarLcode(lcode) {
 }
 
 // Cambia esta URL por la de tu backend si es necesario
-const API_URL = 'https://criticos-production.up.railway.app';
+// Cambia esta URL por la de tu backend en Render
+const API_URL = 'https://criticos-backend.onrender.com';
 
 // Funciones básicas para cada tabla
 
