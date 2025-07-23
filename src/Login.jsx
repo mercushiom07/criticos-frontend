@@ -1,46 +1,122 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUsuario, limpiarGafete } from './db';
+import { getUsuario } from './db';
+
 
 export default function Login() {
-  const [gafete, setGafete] = useState('');
+  const [gafeteScan, setGafeteScan] = useState('');
   const [error, setError] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
-    if (!gafete.trim()) {
-      setError('Ingresa tu gafete');
+    const match = gafeteScan.match(/CF(\d+)/);
+    if (!match) {
+      setError('Formato de código incorrecto.');
       return;
     }
-    const user = await getUsuario(limpiarGafete(gafete));
-    if (user) {
-      localStorage.setItem('gafete', limpiarGafete(gafete));
-      navigate('/menu-metodos');
-    } else {
-      setError('Gafete no encontrado');
+    const gafeteNum = match[1];
+    const usuario = await getUsuario(gafeteNum);
+    console.log('Usuario encontrado:', usuario);
+    if (!usuario) {
+      setError('Usuario no encontrado.');
+      return;
+    }
+    setError('');
+    // Guardar gafete en localStorage
+    localStorage.setItem('gafete', usuario.GAFETE);
+    navigate('/menu-metodos');
+  };
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstall(false);
+      }
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 32, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', minWidth: 320 }}>
-        <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Iniciar sesión</h2>
-        <div style={{ marginBottom: 16 }}>
-          <input
-            type="text"
-            placeholder="Gafete"
-            value={gafete}
-            onChange={e => setGafete(e.target.value)}
-            style={{ width: '100%', padding: 10, fontSize: 16, borderRadius: 4, border: '1px solid #ccc' }}
+    <div style={{
+      width: '100vw',
+      height: '100vh',
+      minHeight: '720px',
+      minWidth: '1280px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#fff',
+      backgroundColor: '#fff',
+    }}>
+      <div style={{
+        width: '420px',
+        minHeight: '420px',
+        background: '#fff',
+        borderRadius: '1.2em',
+        boxShadow: '0 0 24px #b0c4e7',
+        padding: '2.5em 2.5em 2em 2.5em',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1em',
+          width: '100%',
+          marginBottom: '1.5em',
+        }}>
+          <img
+            src="/icon-192x192.png"
+            alt="Logo"
+            style={{ width: 56, height: 56, borderRadius: '12px', boxShadow: '0 2px 8px #b0c4e7' }}
           />
+          <h1 style={{
+            color: '#1976d2',
+            fontSize: '2.2em',
+            fontWeight: 700,
+            margin: 0,
+            textAlign: 'left',
+            lineHeight: 1.1,
+          }}>Inicio de sesión</h1>
         </div>
-        {error && <div style={{ color: '#d32f2f', marginBottom: 12, textAlign: 'center' }}>{error}</div>}
-        <button type="submit" style={{ width: '100%', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, padding: '10px 0', fontSize: 16, cursor: 'pointer' }}>
-          Entrar
-        </button>
-      </form>
+        {showInstall && (
+          <button className="btn btn-login" style={{background:'#388e3c', marginBottom:'1em'}} onClick={handleInstallClick}>
+            Instalar aplicación
+          </button>
+        )}
+        <form className="form-login" onSubmit={handleLogin} style={{width: '100%', display: 'flex', flexDirection: 'column', gap: '1.2em'}}>
+          <label htmlFor="gafete" className="label-login" style={{fontWeight: 500, color: '#1976d2', fontSize: '1.1em'}}>Escanea el código de barras del gafete:</label>
+          <input
+            id="gafete"
+            type="text"
+            value={gafeteScan}
+            onChange={e => setGafeteScan(e.target.value)}
+            autoFocus
+            className="input-login"
+            placeholder="Escanea o escribe tu gafete"
+            style={{padding: '1em', fontSize: '1.15em', borderRadius: '0.5em', border: '1px solid #b0b0b0', marginBottom: 0}}
+          />
+          <button type="submit" className="btn btn-login" style={{fontSize: '1.15em', padding: '0.9em', borderRadius: '0.5em'}}>Ingresar</button>
+          {error && <div className="error-login" style={{color: '#d32f2f', background: '#ffeaea', borderRadius: '0.4em', padding: '0.7em 1em', textAlign: 'center', fontWeight: 'bold'}}>{error}</div>}
+        </form>
+      </div>
     </div>
   );
 }

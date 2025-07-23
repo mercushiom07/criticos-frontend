@@ -1,5 +1,4 @@
 
-
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getUsuario, limpiarGafete } from './db';
@@ -82,16 +81,38 @@ export default function MenuMetodos() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: 0 }}>
-      <div style={{ maxWidth: 500, margin: '0 auto', padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ fontWeight: 'bold', color: '#1976d2' }}>Usuario: {usuario?.NOMBRE || ''}</span>
-          <button style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleCerrarSesion}>Cerrar sesión</button>
+    <div style={{
+      width: '100vw',
+      height: '100vh',
+      minHeight: '720px',
+      minWidth: '1280px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#fff',
+    }}>
+      <div style={{
+        width: '520px',
+        minHeight: '480px',
+        background: '#fff',
+        borderRadius: '1.2em',
+        boxShadow: '0 0 24px #b0c4e7',
+        padding: '2.5em 2.5em 2em 2.5em',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1.5em'}}>
+          <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
+            Usuario: {usuario?.NOMBRE || ''}
+          </span>
+          <button className="btn" style={{width: 140, background: '#b71c1c'}} onClick={handleCerrarSesion}>Cerrar sesión</button>
         </div>
-        <h1 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Menú</h1>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+        <h1 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em', fontSize: '2.1em', fontWeight: 700}}>Menú</h1>
+        <div style={{display: 'flex', flexDirection: 'column', gap: '2em', alignItems: 'center', width: '100%'}}>
           {accesos.map(a => (
-            <Link key={a.to} to={a.to} style={{ flex: '1 1 200px', margin: 0, background: '#fff', border: '1px solid #1976d2', color: '#1976d2', borderRadius: 4, padding: '12px 0', textAlign: 'center', textDecoration: 'none', fontWeight: 500, fontSize: 16 }}>{a.label}</Link>
+            <Link key={a.to} to={a.to} className="btn" style={{width: '80%', textAlign: 'center', fontSize: '1.15em', padding: '1em', borderRadius: '0.5em'}}>{a.label}</Link>
           ))}
         </div>
       </div>

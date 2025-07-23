@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import './App.css';
+import { useNavigate } from 'react-router-dom';
 import { addDisparo, addHistorial, getCable, getUsuario, limpiarGafete, getDisparos } from './db';
-import { Link, useNavigate } from 'react-router-dom';
-
 
 const lineas = [
-  "GA004","GV004","GA/GV019","GA119","GA/GV219","GA711","GV711","GA811","GV811","GA234","GA034","GV034","GA032","GV032","GA092","GV092","GA509","GV509","GA609","GV609","GV709-809","GA/GV015","GA315","GV315","GA021-022","GV021-022","GA023-024","GV023-024","GA278/478","GA103","GV103","GV001","GV002","GA007","GA008-009","GA010-011","GV007","GV010-011","GV012-013"
+  { id: 'L1', nombre: 'Línea 1' },
+  { id: 'L2', nombre: 'Línea 2' },
+  { id: 'L3', nombre: 'Línea 3' },
 ];
 
-function DisparosLPS() {
+export default function DisparoCritico() {
+  const navigate = useNavigate();
   const [linea, setLinea] = useState('');
   const [nombreUsuario, setNombreUsuario] = useState('');
   const selectLineaRef = useRef(null);
@@ -18,13 +19,11 @@ function DisparosLPS() {
     if (selectLineaRef.current) {
       selectLineaRef.current.focus();
     }
-    // Obtener nombre del usuario activo
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
       getUsuario(limpiarGafete(gafete)).then(u => setNombreUsuario(u?.NOMBRE || ''));
     }
-  }, []);
-  const navigate = useNavigate();
+  }, [navigate]);
   const handleIrMenu = () => {
     navigate('/menu-metodos');
   };
@@ -33,10 +32,8 @@ function DisparosLPS() {
   const [piezasRestantes, setPiezasRestantes] = useState('');
   const [avisoEnviado, setAvisoEnviado] = useState(false);
 
-  // Buscar información real del cable en la base de datos
   const buscarInfoCable = async (codigo) => {
     if (!codigo) return null;
-    // Elimina el prefijo hasta el primer guion, si existe
     const lcodeSinPrefijo = codigo.includes('-') ? codigo.split('-')[1] : codigo;
     const cable = await getCable(lcodeSinPrefijo);
     if (!cable) return null;
@@ -59,7 +56,6 @@ function DisparosLPS() {
     setLcode('');
     setInfoCable(null);
     setPiezasRestantes('');
-    // Cambia el foco al input del LCODE
     setTimeout(() => {
       if (lcodeInputRef.current) {
         lcodeInputRef.current.focus();
@@ -78,16 +74,13 @@ function DisparosLPS() {
   };
 
   const handleRegistrar = async () => {
-    if (!infoCable) return;
-    // Validar duplicado
+    const gafete = localStorage.getItem('gafete') || '';
     const disparos = await getDisparos();
     const existe = disparos.some(d => (d.LCODE || '').toUpperCase() === (infoCable.lcode || '').toUpperCase() && (d.LINEA || '').toUpperCase() === (linea || '').toUpperCase());
     if (existe) {
       alert('Este LCODE ya está disparado en esta línea.');
       return;
     }
-    // Siempre usa el usuario activo de la sesión
-    const gafeteActivo = limpiarGafete(localStorage.getItem('gafete') || '');
     const disparo = {
       LINEA: linea,
       PIEZAS_RESTANTES: Number(piezasRestantes),
@@ -107,7 +100,7 @@ function DisparosLPS() {
     await addHistorial({
       ...disparo,
       ESTATUS: 'CRITICO',
-      GAFETE: gafeteActivo,
+      GAFETE: gafete,
       FECHA: new Date().toLocaleString()
     });
     setAvisoEnviado(true);
@@ -144,25 +137,23 @@ function DisparosLPS() {
         justifyContent: 'center',
       }}>
         <div style={{width: '100%', marginBottom: '1.5em', display: 'flex', justifyContent: 'flex-start'}}>
-          <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
+          <span className="usuario-critico" style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
             Usuario: {nombreUsuario}
           </span>
         </div>
-        <h1 className="titulo-critico" style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.2em', fontSize: '1.7em', fontWeight: 700}}>RYC DISPARO LPS</h1>
-        <h2 className="subtitulo-critico" style={{textAlign: 'center', color: '#333', fontSize: '1.1em', marginBottom: '1.5em'}}>Disparo de Cable LPS</h2>
+        <h1 className="titulo-critico" style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.2em', fontSize: '1.7em', fontWeight: 700}}>RYC DISPARO DE CRITICO</h1>
+        <h2 className="subtitulo-critico" style={{textAlign: 'center', color: '#333', fontSize: '1.1em', marginBottom: '1.5em'}}>Disparo de Cable Crítico</h2>
         <div className="form-group">
           <div className="etiqueta-campo">LINEA:</div>
-          <label>Selecciona la línea:</label>
-          <select
+          <label>Escanea el QR o escribe la línea:</label>
+          <input
             ref={selectLineaRef}
+            type="text"
             value={linea}
             onChange={handleLineaChange}
-          >
-            <option value="">Selecciona una línea</option>
-            {lineas.map(l => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
+            placeholder="Escanea o escribe la línea"
+          />
+          <p className="ayuda-critico">Escanea el QR para capturar la línea o escríbela manualmente</p>
         </div>
         <div className="form-group">
           <div className="etiqueta-campo">LCODE:</div>
@@ -233,5 +224,3 @@ function DisparosLPS() {
     </div>
   );
 }
-
-export default DisparosLPS;

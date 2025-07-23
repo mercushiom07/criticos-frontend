@@ -1,13 +1,29 @@
-import { useEffect, useState } from 'react';
-import { getHistorial } from './db';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getUsuario, getHistorial, limpiarGafete } from './db';
 
 const columns = [
-  'ID', 'GAFETE', 'NOMBRE', 'LINEA', 'LCODE', 'CIRCUITO', 'COLOR', 'MAQUINA', 'RUTA', 'DESTINO', 'VOLUMEN', 'MAX', 'MIN', 'PZAS', 'FECHA', 'ESTATUS'
+  'ID', 'FECHA', 'LINEA', 'LCODE', 'CIRCUITO', 'COLOR', 'MAQUINA', 'RUTA', 'DESTINO', 'VOLUMEN', 'MAX', 'MIN', 'PZAS', 'ESTATUS', 'GAFETE'
 ];
 
 export default function TablaHistorial() {
+  const navigate = useNavigate();
   const [historial, setHistorial] = useState([]);
-  const [filtro, setFiltro] = useState('');
+  const [nombreUsuario, setNombreUsuario] = useState('');
+  const [usuarioActivo, setUsuarioActivo] = useState(null);
+  useEffect(() => {
+    const gafete = localStorage.getItem('gafete');
+    if (gafete) {
+      getUsuario(limpiarGafete(gafete)).then(u => {
+        setNombreUsuario(u?.NOMBRE || '');
+        setUsuarioActivo(u);
+      });
+    }
+  }, []);
+  const handleIrMenu = () => {
+    navigate('/menu-metodos');
+  };
+  const [filters, setFilters] = useState({});
 
   useEffect(() => {
     cargarHistorial();
@@ -18,43 +34,127 @@ export default function TablaHistorial() {
     setHistorial(lista);
   }
 
-  const historialFiltrado = historial.filter(h =>
-    columns.some(col => (h[col] || '').toString().toLowerCase().includes(filtro.toLowerCase()))
+  // Obtener valores únicos para cada columna para los filtros combobox
+  const getUniqueValues = (col) => {
+    const vals = historial.map(h => {
+      if (col === 'ID') return h.id || '';
+      if (col === 'MAQUINA') return h.MAQUINA_CORTE || h.MAQUINA || '';
+      if (col === 'RUTA') return h.RUTA_CORTE || h.RUTA || '';
+      if (col === 'VOLUMEN') return h.VOLUMEN_DIARIO || h.VOLUMEN || '';
+      if (col === 'MAX') return h.MAXIMO || h.MAX || '';
+      if (col === 'MIN') return h.MINIMO || h.MIN || '';
+      if (col === 'PZAS') return h.PIEZAS_RESTANTES || h.PZAS || '';
+      return h[col] || '';
+    });
+    return Array.from(new Set(vals.filter(v => v !== undefined && v !== null && v !== '')));
+  };
+
+  const handleFilterChange = (col, value) => {
+    setFilters(f => ({ ...f, [col]: value }));
+  };
+
+  let filteredHistorial = historial;
+  // Si es usuario de MATERIALES, filtrar por RUTA
+  if (usuarioActivo && usuarioActivo.DEPARTAMENTO === 'MATERIALES') {
+    filteredHistorial = filteredHistorial.filter(h => (h.RUTA_CORTE || h.RUTA || '').toUpperCase() === 'MATERIALES');
+  }
+  filteredHistorial = filteredHistorial.filter(h =>
+    columns.every(col => {
+      if (!filters[col]) return true;
+      if (col === 'ID') return String(h.id || '').toLowerCase().includes(filters[col].toLowerCase());
+      return String(h[col] || '').toLowerCase().includes(filters[col].toLowerCase());
+    })
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: 0 }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
-        <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Historial</h2>
-        <div style={{ marginBottom: 16 }}>
-          <input
-            type="text"
-            placeholder="Filtrar historial"
-            value={filtro}
-            onChange={e => setFiltro(e.target.value)}
-            style={{ width: 300, padding: 8, fontSize: 14, borderRadius: 4, border: '1px solid #ccc' }}
-          />
+    <div className="responsive-tabla-historial">
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
+        <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
+          Usuario: {nombreUsuario}
+        </span>
+        <div style={{display: 'flex', gap: '0.5em'}}>
+          <button className="btn" style={{width: 120, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'collapse', width: '100%', background: '#fff', fontSize: 13 }}>
-            <thead>
-              <tr>
-                {columns.map(col => (
-                  <th key={col} style={{ border: '1px solid #ccc', padding: 4 }}>{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {historialFiltrado.map(h => (
-                <tr key={h.ID || h.id}>
-                  {columns.map(col => (
-                    <td key={col} style={{ border: '1px solid #ccc', padding: 4 }}>{h[col] || h[col.toUpperCase()] || h[col.toLowerCase()] || ''}</td>
+      </div>
+      <h2 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>Historial de Cambios</h2>
+      <div style={{overflowX: 'auto'}}>
+      <table className="admin-table" style={{minWidth: '1300px', tableLayout: 'fixed', wordBreak: 'break-word', fontSize: '12px'}}>
+        <thead>
+          <tr>
+            {columns.map(col => <th key={col} style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{col}</th>)}
+          </tr>
+          <tr>
+            {columns.map(col => (
+              <th key={col} style={{padding: 0}}>
+                <input
+                  list={`filtros-${col}`}
+                  style={{
+                    width: '100%',
+                    fontSize: '0.95em',
+                    boxSizing: 'border-box',
+                    border: 'none',
+                    outline: 'none',
+                    padding: '0.4em 0.2em',
+                    background: '#e3eafc',
+                    height: '2em'
+                  }}
+                  placeholder={`Filtrar ${col}`}
+                  value={filters[col] || ''}
+                  onChange={e => handleFilterChange(col, e.target.value)}
+                  autoComplete="off"
+                />
+                <datalist id={`filtros-${col}`}>
+                  <option value="">Todos</option>
+                  {getUniqueValues(col).map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </datalist>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {filteredHistorial.map(h => {
+            let estatusColor = '';
+            switch ((h.ESTATUS || '').toUpperCase()) {
+              case 'CRITICO':
+                estatusColor = '#e53935'; // rojo
+                break;
+              case 'EN PROCESO':
+                estatusColor = '#ffd600'; // amarillo
+                break;
+              case 'CORTADO':
+                estatusColor = '#43a047'; // verde
+                break;
+              case 'BAJO VOLUMEN':
+                estatusColor = '#00bcd4'; // turquesa
+                break;
+              default:
+                estatusColor = '';
+            }
+            return (
+              <tr key={h.id}>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.id}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 180}}>{h.FECHA}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.LINEA}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.LCODE || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.CIRCUITO || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 100}}>{h.COLOR || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.MAQUINA_CORTE || h.MAQUINA || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.RUTA_CORTE || h.RUTA || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.DESTINO || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.VOLUMEN_DIARIO || h.VOLUMEN || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', width: 55, maxWidth: 55, textAlign: 'center'}}>{h.MAXIMO || h.MAX || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', width: 55, maxWidth: 55, textAlign: 'center'}}>{h.MINIMO || h.MIN || ''}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', width: 55, maxWidth: 55, textAlign: 'center'}}>{h.PIEZAS_RESTANTES || h.PZAS}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120, background: estatusColor, color: estatusColor ? (estatusColor === '#ffd600' ? '#333' : '#fff') : undefined, fontWeight: 'bold', textAlign: 'center'}}>{h.ESTATUS}</td>
+                <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{h.GAFETE || ''}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
       </div>
     </div>
   );

@@ -1,61 +1,157 @@
-import { useState } from 'react';
-import { getUsuario, addUsuario, limpiarGafete } from './db';
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getUsuarios, addUsuario, getUsuario, deleteUsuario, limpiarGafete } from './db';
+
+// ...existing code...
+
+const DEPTOS_LIMITADOS = ['LPS', 'CORTE', 'MFG'];
 
 export default function VistaUsuarios() {
-  const [gafete, setGafete] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [departamento, setDepartamento] = useState('');
-  const [ruta, setRuta] = useState('');
-  const [tipo, setTipo] = useState('');
-  const [mensaje, setMensaje] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMensaje('');
-    if (!gafete || !nombre || !departamento || !tipo) {
-      setMensaje('Completa todos los campos obligatorios');
-      return;
-    }
-    const existe = await getUsuario(limpiarGafete(gafete));
-    if (existe) {
-      setMensaje('El gafete ya existe');
-      return;
-    }
-    await addUsuario({
-      GAFETE: limpiarGafete(gafete),
-      NOMBRE: nombre,
-      DEPARTAMENTO: departamento,
-      RUTA_MAQUINA: ruta,
-      TIPO_USUARIO: tipo
-    });
-    setMensaje('Usuario agregado');
-    setGafete(''); setNombre(''); setDepartamento(''); setRuta(''); setTipo('');
+  const navigate = useNavigate();
+  const handleCerrarSesion = () => {
+    localStorage.removeItem('gafete');
+    navigate('/login', { replace: true });
   };
+  function handleIrMenu() {
+    navigate('/menu-metodos');
+  }
+  const [usuarios, setUsuarios] = useState([]);
+  const [usuarioActivo, setUsuarioActivo] = useState(null);
+  const [editando, setEditando] = useState(null); // id del usuario editando
+  const [seleccionado, setSeleccionado] = useState(null); // gafete del usuario seleccionado
+  const [nuevoUsuario, setNuevoUsuario] = useState({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' });
+  const [modo, setModo] = useState('ver'); // 'ver', 'nuevo', 'editar'
+
+  useEffect(() => {
+    const gafete = localStorage.getItem('gafete');
+    if (gafete) {
+      getUsuario(limpiarGafete(gafete)).then(u => setUsuarioActivo(u));
+    }
+    cargarUsuarios();
+  }, []);
+
+  async function cargarUsuarios() {
+    const lista = await getUsuarios();
+    setUsuarios(lista);
+  }
+
+  function puedeEditar() {
+    return usuarioActivo && usuarioActivo.TIPO_USUARIO === 'ADMIN';
+  }
+
+  function usuariosVisibles() {
+    if (!usuarioActivo) return [];
+    // Solo usuarios de METODOS pueden ver todos los registros
+    if (usuarioActivo.DEPARTAMENTO === 'METODOS') return usuarios;
+    // Todos los demás (incluyendo ADMIN) solo ven su propio departamento
+    return usuarios.filter(u => u.DEPARTAMENTO === usuarioActivo.DEPARTAMENTO);
+  }
+
+  function handleNuevo() {
+    setModo('nuevo');
+    setNuevoUsuario({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' });
+  }
+
+  function handleEditar() {
+    if (!seleccionado) return;
+    const u = usuarios.find(u => u.GAFETE === seleccionado);
+    if (u) {
+      setModo('editar');
+      setEditando(u.GAFETE);
+      setNuevoUsuario({ ...u });
+    }
+  }
+
+  function handleCancelar() {
+    setModo('ver');
+    setEditando(null);
+    setNuevoUsuario({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' });
+  }
+
+  async function handleGuardar() {
+    await addUsuario(nuevoUsuario);
+    setModo('ver');
+    setEditando(null);
+    setNuevoUsuario({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' });
+    await cargarUsuarios();
+  }
+
+  async function handleEliminar() {
+    if (!seleccionado) return;
+    await deleteUsuario(seleccionado);
+    setSeleccionado(null);
+    await cargarUsuarios();
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 32, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', minWidth: 320 }}>
-        <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Agregar usuario</h2>
-        <div style={{ marginBottom: 12 }}>
-          <input type="text" placeholder="Gafete*" value={gafete} onChange={e => setGafete(e.target.value)} style={{ width: '100%', padding: 8, fontSize: 15, borderRadius: 4, border: '1px solid #ccc' }} />
+    <div className="responsive-vista-usuarios">
+      <h2 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>Gestión de Usuarios</h2>
+      <div style={{marginBottom: '1em', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
+          Usuario activo: {usuarioActivo?.NOMBRE || ''} ({usuarioActivo?.TIPO_USUARIO || ''})
+        </span>
+        <div style={{display: 'flex', gap: '0.5em'}}>
+          <button className="btn" style={{width: 120, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <input type="text" placeholder="Nombre*" value={nombre} onChange={e => setNombre(e.target.value)} style={{ width: '100%', padding: 8, fontSize: 15, borderRadius: 4, border: '1px solid #ccc' }} />
+      </div>
+      {puedeEditar() && modo === 'ver' && (
+        <div style={{marginBottom: '1em', display: 'flex', gap: '1em'}}>
+          <button className="btn" onClick={handleNuevo}>Registrar nuevo usuario</button>
+          <button className="btn" onClick={handleEditar} disabled={!seleccionado}>Modificar</button>
+          <button className="btn" onClick={handleEliminar} disabled={!seleccionado}>Eliminar</button>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <input type="text" placeholder="Departamento*" value={departamento} onChange={e => setDepartamento(e.target.value)} style={{ width: '100%', padding: 8, fontSize: 15, borderRadius: 4, border: '1px solid #ccc' }} />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <input type="text" placeholder="Ruta/Máquina" value={ruta} onChange={e => setRuta(e.target.value)} style={{ width: '100%', padding: 8, fontSize: 15, borderRadius: 4, border: '1px solid #ccc' }} />
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <input type="text" placeholder="Tipo de usuario*" value={tipo} onChange={e => setTipo(e.target.value)} style={{ width: '100%', padding: 8, fontSize: 15, borderRadius: 4, border: '1px solid #ccc' }} />
-        </div>
-        {mensaje && <div style={{ color: mensaje.includes('agregado') ? '#388e3c' : '#d32f2f', marginBottom: 12, textAlign: 'center' }}>{mensaje}</div>}
-        <button type="submit" style={{ width: '100%', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, padding: '10px 0', fontSize: 16, cursor: 'pointer' }}>
-          Guardar
-        </button>
-      </form>
+      )}
+      <table className="admin-table" style={{width: '100%', fontSize: '12px', wordBreak: 'break-word'}}>
+        <thead>
+          <tr>
+            <th></th>
+            <th>GAFETE</th>
+            <th>NOMBRE</th>
+            <th>DEPARTAMENTO</th>
+            <th>RUTA_MAQUINA</th>
+            <th>TIPO_USUARIO</th>
+          </tr>
+        </thead>
+        <tbody>
+          {modo === 'nuevo' && (
+            <tr>
+              <td></td>
+              <td><input value={nuevoUsuario.GAFETE} onChange={e => setNuevoUsuario(u => ({...u, GAFETE: e.target.value}))} /></td>
+              <td><input value={nuevoUsuario.TIPO_USUARIO} onChange={e => setNuevoUsuario(u => ({...u, TIPO_USUARIO: e.target.value}))} /></td>
+              <td>
+                <button className="btn" onClick={handleGuardar}>Guardar</button>
+                <button className="btn" onClick={handleCancelar}>Cancelar</button>
+              </td>
+            </tr>
+          )}
+          {usuariosVisibles().map(u => modo === 'editar' && editando === u.GAFETE ? (
+            <tr key={u.GAFETE}>
+              <td></td>
+              <td><input value={nuevoUsuario.GAFETE} onChange={e => setNuevoUsuario(usr => ({...usr, GAFETE: e.target.value}))} /></td>
+              <td><input value={nuevoUsuario.NOMBRE} onChange={e => setNuevoUsuario(usr => ({...usr, NOMBRE: e.target.value}))} /></td>
+              <td><input value={nuevoUsuario.DEPARTAMENTO} onChange={e => setNuevoUsuario(usr => ({...usr, DEPARTAMENTO: e.target.value}))} /></td>
+              <td><input value={nuevoUsuario.RUTA_MAQUINA} onChange={e => setNuevoUsuario(usr => ({...usr, RUTA_MAQUINA: e.target.value}))} /></td>
+              <td><input value={nuevoUsuario.TIPO_USUARIO} onChange={e => setNuevoUsuario(usr => ({...usr, TIPO_USUARIO: e.target.value}))} /></td>
+              <td>
+                <button className="btn" onClick={handleGuardar}>Guardar</button>
+                <button className="btn" onClick={handleCancelar}>Cancelar</button>
+              </td>
+            </tr>
+          ) : (
+            <tr key={u.GAFETE} style={{background: seleccionado === u.GAFETE ? '#e3eafc' : undefined}}>
+              <td>
+                <input type="radio" name="seleccionUsuario" checked={seleccionado === u.GAFETE} onChange={() => setSeleccionado(u.GAFETE)} />
+              </td>
+              <td>{u.GAFETE}</td>
+              <td>{u.NOMBRE}</td>
+              <td>{u.DEPARTAMENTO}</td>
+              <td>{u.RUTA_MAQUINA}</td>
+              <td>{u.TIPO_USUARIO}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

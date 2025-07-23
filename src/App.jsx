@@ -127,87 +127,76 @@ function App() {
   };
 
   return (
-    <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
-      <div className="row w-100 justify-content-center">
-        <div className="col-12 col-lg-10">
-          <div className="card shadow p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <span className="fw-bold text-primary">Usuario: {nombreUsuario}</span>
-              <button className="btn btn-secondary" onClick={handleIrMenu}>Regresar al menú</button>
-            </div>
-            <h1 className="text-center text-primary mb-2">RYC DISPARO DE CRITICO</h1>
-            <h2 className="text-center text-secondary mb-4">Disparo de Cable Crítico</h2>
-            <div className="row g-3">
-              <div className="col-12 col-md-6">
-                <label className="form-label">LÍNEA:</label>
-                <input
-                  ref={selectLineaRef}
-                  type="text"
-                  value={linea}
-                  onChange={handleLineaChange}
-                  placeholder="Escanea o escribe la línea"
-                  className="form-control mb-2"
-                />
-                <div className="form-text mb-3">Escanea el QR para capturar la línea o escríbela manualmente</div>
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label">LCODE:</label>
-                <input
-                  ref={lcodeInputRef}
-                  type="text"
-                  value={lcode}
-                  onChange={handleScanLcode}
-                  placeholder="Escanea o escribe el LCODE"
-                  className="form-control mb-2"
-                  disabled={!linea}
-                />
-              </div>
-              {infoCable && (
-                <div className="col-12">
-                  <div className="alert alert-info">
-                    <div><strong>LCODE:</strong> {infoCable.lcode}</div>
-                    <div><strong>CIRCUITO:</strong> {infoCable.circuito}</div>
-                    <div><strong>COLOR:</strong> {infoCable.color}</div>
-                    <div><strong>MAQUINA DE CORTE:</strong> {infoCable.maquinaCorte}</div>
-                    <div><strong>RUTA DE CORTE:</strong> {infoCable.rutaCorte}</div>
-                    <div><strong>DESTINO:</strong> {infoCable.destino}</div>
-                    <div><strong>LINEA:</strong> {infoCable.linea}</div>
-                    <div><strong>VOLUMEN DIARIO:</strong> {infoCable.volumenDiario}</div>
-                    <div><strong>MÁXIMO:</strong> {infoCable.maximo}</div>
-                    <div><strong>MÍNIMO:</strong> {infoCable.minimo}</div>
-                  </div>
-                </div>
-              )}
-              <div className="col-12 col-md-6">
-                <label className="form-label">CANTIDAD:</label>
-                <input
-                  ref={cantidadInputRef}
-                  type="number"
-                  min="0"
-                  value={piezasRestantes}
-                  onChange={e => setPiezasRestantes(e.target.value)}
-                  placeholder="Cantidad"
-                  className="form-control mb-2"
-                />
-              </div>
-              <div className="col-12 col-md-6 d-flex align-items-end">
-                <button
-                  className="btn btn-success w-100"
-                  onClick={handleRegistrar}
-                  disabled={!linea || !lcode || !piezasRestantes}
-                >
-                  Registrar disparo
-                </button>
-              </div>
-              {avisoEnviado && (
-                <div className="col-12">
-                  <div className="alert alert-success text-center">¡Aviso registrado!</div>
-                </div>
-              )}
-            </div>
-          </div>
+    <div className="container responsive-critico">
+      <div className="header-critico">
+        <span className="usuario-critico">Usuario: {nombreUsuario}</span>
+        <div style={{display: 'flex', gap: '0.5em'}}>
+          <button className="btn menu-btn" onClick={handleIrMenu}>Regresar al menú</button>
         </div>
       </div>
+      <h1 className="titulo-critico">RYC DISPARO DE CRITICO</h1>
+      <h2 className="subtitulo-critico">Disparo de Cable Crítico</h2>
+      <div className="form-group">
+        <div className="etiqueta-campo">LINEA:</div>
+        <label>Escanea el QR o escribe la línea:</label>
+        <input
+          ref={selectLineaRef}
+          type="text"
+          value={linea}
+          onChange={handleLineaChange}
+          placeholder="Escanea o escribe la línea"
+        />
+        <p className="ayuda-critico">Escanea el QR para capturar la línea o escríbela manualmente</p>
+      </div>
+      <div className="form-group">
+        <div className="etiqueta-campo">LCODE:</div>
+        <label>Escanea el código de barras del LCODE:</label>
+        <input
+          ref={lcodeInputRef}
+          type="text"
+          value={lcode}
+          onChange={handleScanLcode}
+          placeholder="Escanea o escribe el LCODE"
+          disabled={!linea}
+        />
+      </div>
+      {infoCable && (
+        <>
+          <div className="etiqueta-campo">INFORMACIÓN:</div>
+          <form className="info-cable">
+            <div><strong>LCODE:</strong> {infoCable.lcode}</div>
+            <div><strong>CIRCUITO:</strong> {infoCable.circuito}</div>
+            <div><strong>COLOR:</strong> {infoCable.color}</div>
+            <div><strong>MAQUINA DE CORTE:</strong> {infoCable.maquinaCorte}</div>
+            <div><strong>RUTA DE CORTE:</strong> {infoCable.rutaCorte}</div>
+            <div><strong>DESTINO:</strong> {infoCable.destino}</div>
+            <div><strong>LINEA:</strong> {infoCable.linea}</div>
+            <div><strong>VOLUMEN DIARIO:</strong> {infoCable.volumenDiario}</div>
+            <div><strong>MÁXIMO:</strong> {infoCable.maximo}</div>
+            <div><strong>MÍNIMO:</strong> {infoCable.minimo}</div>
+          </form>
+        </>
+      )}
+      <div className="form-group">
+        <div className="etiqueta-campo">CANTIDAD:</div>
+        <label>Piezas restantes en el punto de uso:</label>
+        <input
+          ref={cantidadInputRef}
+          type="number"
+          min="0"
+          value={piezasRestantes}
+          onChange={e => setPiezasRestantes(e.target.value)}
+          placeholder="Cantidad"
+        />
+      </div>
+      <button
+        className="btn registrar-btn"
+        onClick={handleRegistrar}
+        disabled={!linea || !lcode || !piezasRestantes}
+      >
+        Registrar disparo
+      </button>
+      {avisoEnviado && <div className="aviso-exito">¡Aviso registrado!</div>}
     </div>
   );
 }
