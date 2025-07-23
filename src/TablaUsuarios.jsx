@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { getUsuario } from './db';
-import { getUsuarios, addUsuario } from './db';
+import { useNavigate } from 'react-router-dom';
+import { getUsuario, getUsuarios, addUsuario, deleteUsuario, limpiarGafete } from './db';
 
 export default function TablaUsuarios() {
+  const navigate = useNavigate(); // Solo una vez al inicio del componente
   const [usuarios, setUsuarios] = useState([]);
   const [nombreUsuario, setNombreUsuario] = useState('');
   useEffect(() => {
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => setNombreUsuario(u?.NOMBRE || ''));
+      getUsuario(limpiarGafete(gafete)).then(u => setNombreUsuario(u?.NOMBRE || ''));
     }
   }, []);
   const handleIrMenu = () => {
-    window.location.href = '/menu-metodos';
+    navigate('/menu-metodos');
   };
   const [form, setForm] = useState({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' });
   const [editGafete, setEditGafete] = useState(null);
@@ -22,13 +23,8 @@ export default function TablaUsuarios() {
   }, []);
 
   async function cargarUsuarios() {
-    if (getUsuarios) {
-      const lista = await getUsuarios();
-      setUsuarios(lista);
-    } else {
-      // fallback: obtener todos los usuarios por claves conocidas
-      setUsuarios([]);
-    }
+    const lista = await getUsuarios();
+    setUsuarios(lista);
   }
 
   async function handleAddOrEdit(e) {
@@ -45,19 +41,19 @@ export default function TablaUsuarios() {
   }
 
   async function handleDelete(gafete) {
-    const db = await import('./db');
-    const dbInstance = await db.dbPromise;
-    await dbInstance.delete('usuarios', gafete);
+    await deleteUsuario(gafete);
     await cargarUsuarios();
   }
 
   return (
-    <div style={{padding: '2em'}}>
+    <div className="responsive-tabla-usuarios">
       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
         <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
           Usuario: {nombreUsuario}
         </span>
-        <button className="btn" style={{width: 180, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+        <div style={{display: 'flex', gap: '0.5em'}}>
+          <button className="btn" style={{width: 120, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+        </div>
       </div>
       <h2>Tabla de Usuarios</h2>
       <form onSubmit={handleAddOrEdit} style={{marginBottom: '2em'}}>

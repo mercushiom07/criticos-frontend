@@ -1,6 +1,6 @@
 import ImportCSV from './ImportCSV';
 import ListaCables from './ListaCables';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getUsuario } from './db';
 
@@ -14,8 +14,9 @@ export default function AdminCables() {
     }
   }, []);
   const handleImport = () => setRefreshKey(k => k + 1);
+  const navigate = useNavigate();
   const handleIrMenu = () => {
-    window.location.href = '/menu-metodos';
+    navigate('/menu-metodos');
   };
 
   return (

@@ -1,7 +1,8 @@
 
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './App.css';
-import { addDisparo, addHistorial, getCable, getUsuario } from './db';
+import { addDisparo, addHistorial, getCable, getUsuario, limpiarGafete, getDisparos } from './db';
 import { Link } from 'react-router-dom';
 
 
@@ -12,6 +13,7 @@ const lineas = [
 ];
 
 function App() {
+  const navigate = useNavigate();
   const [linea, setLinea] = useState('');
   const [nombreUsuario, setNombreUsuario] = useState('');
   const selectLineaRef = useRef(null);
@@ -21,14 +23,14 @@ function App() {
     if (selectLineaRef.current) {
       selectLineaRef.current.focus();
     }
-    // Obtener nombre del usuario activo
+    // Redirigir a login si no hay sesión
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => setNombreUsuario(u?.NOMBRE || ''));
+      getUsuario(limpiarGafete(gafete)).then(u => setNombreUsuario(u?.NOMBRE || ''));
     }
-  }, []);
+  }, [navigate]);
   const handleIrMenu = () => {
-    window.location.href = '/menu-metodos';
+    navigate('/menu-metodos');
   };
   const [lcode, setLcode] = useState('');
   const [infoCable, setInfoCable] = useState(null);
@@ -79,9 +81,20 @@ function App() {
     }
   };
 
+  const handleCerrarSesion = () => {
+    localStorage.removeItem('gafete');
+    navigate('/login', { replace: true });
+  };
+
   const handleRegistrar = async () => {
-    if (!infoCable) return;
     const gafete = localStorage.getItem('gafete') || '';
+    // Validar duplicado
+    const disparos = await getDisparos();
+    const existe = disparos.some(d => (d.LCODE || '').toUpperCase() === (infoCable.lcode || '').toUpperCase() && (d.LINEA || '').toUpperCase() === (linea || '').toUpperCase());
+    if (existe) {
+      alert('Este LCODE ya está disparado en esta línea.');
+      return;
+    }
     const disparo = {
       LINEA: linea,
       PIEZAS_RESTANTES: Number(piezasRestantes),
@@ -94,7 +107,8 @@ function App() {
       DESTINO: infoCable.destino,
       VOLUMEN_DIARIO: infoCable.volumenDiario,
       MAXIMO: infoCable.maximo,
-      MINIMO: infoCable.minimo
+      MINIMO: infoCable.minimo,
+      ESTATUS: 'CRITICO'
     };
     await addDisparo(disparo);
     await addHistorial({
@@ -113,19 +127,15 @@ function App() {
   };
 
   return (
-    <div className="container">
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
-        <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
-          Usuario: {nombreUsuario}
-        </span>
-        <button className="btn" style={{width: 180, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+    <div className="container responsive-critico">
+      <div className="header-critico">
+        <span className="usuario-critico">Usuario: {nombreUsuario}</span>
+        <div style={{display: 'flex', gap: '0.5em'}}>
+          <button className="btn menu-btn" onClick={handleIrMenu}>Regresar al menú</button>
+        </div>
       </div>
-      <nav style={{marginBottom: '1em', display: 'flex', justifyContent: 'space-between'}}>
-        <Link to="/admin-cables" style={{color: '#1976d2', fontWeight: 'bold'}}>Ir a administración de cables</Link>
-      </nav>
-
-      <h1 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>RYC DISPARO DE CRITICO</h1>
-      <h2>Disparo de Cable Crítico</h2>
+      <h1 className="titulo-critico">RYC DISPARO DE CRITICO</h1>
+      <h2 className="subtitulo-critico">Disparo de Cable Crítico</h2>
       <div className="form-group">
         <div className="etiqueta-campo">LINEA:</div>
         <label>Escanea el QR o escribe la línea:</label>
@@ -136,7 +146,7 @@ function App() {
           onChange={handleLineaChange}
           placeholder="Escanea o escribe la línea"
         />
-        <p style={{fontSize: '0.9em'}}>Escanea el QR para capturar la línea o escríbela manualmente</p>
+        <p className="ayuda-critico">Escanea el QR para capturar la línea o escríbela manualmente</p>
       </div>
       <div className="form-group">
         <div className="etiqueta-campo">LCODE:</div>
@@ -180,7 +190,7 @@ function App() {
         />
       </div>
       <button
-        className="btn"
+        className="btn registrar-btn"
         onClick={handleRegistrar}
         disabled={!linea || !lcode || !piezasRestantes}
       >

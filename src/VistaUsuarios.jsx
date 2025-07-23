@@ -1,12 +1,21 @@
-  function handleIrMenu() {
-    window.location.href = '/menu-metodos';
-  }
+
 import React, { useEffect, useState } from 'react';
-import { getUsuarios, addUsuario, getUsuario, dbPromise } from './db';
+import { useNavigate } from 'react-router-dom';
+import { getUsuarios, addUsuario, getUsuario, deleteUsuario, limpiarGafete } from './db';
+
+// ...existing code...
 
 const DEPTOS_LIMITADOS = ['LPS', 'CORTE', 'MFG'];
 
 export default function VistaUsuarios() {
+  const navigate = useNavigate();
+  const handleCerrarSesion = () => {
+    localStorage.removeItem('gafete');
+    navigate('/login', { replace: true });
+  };
+  function handleIrMenu() {
+    navigate('/menu-metodos');
+  }
   const [usuarios, setUsuarios] = useState([]);
   const [usuarioActivo, setUsuarioActivo] = useState(null);
   const [editando, setEditando] = useState(null); // id del usuario editando
@@ -17,7 +26,7 @@ export default function VistaUsuarios() {
   useEffect(() => {
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => setUsuarioActivo(u));
+      getUsuario(limpiarGafete(gafete)).then(u => setUsuarioActivo(u));
     }
     cargarUsuarios();
   }, []);
@@ -70,20 +79,21 @@ export default function VistaUsuarios() {
 
   async function handleEliminar() {
     if (!seleccionado) return;
-    const db = await dbPromise;
-    await db.delete('usuarios', seleccionado);
+    await deleteUsuario(seleccionado);
     setSeleccionado(null);
     await cargarUsuarios();
   }
 
   return (
-    <div className="container" style={{minWidth: 800, padding: '2em'}}>
+    <div className="responsive-vista-usuarios">
       <h2 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>Gestión de Usuarios</h2>
       <div style={{marginBottom: '1em', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
         <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
           Usuario activo: {usuarioActivo?.NOMBRE || ''} ({usuarioActivo?.TIPO_USUARIO || ''})
         </span>
-        <button className="btn" style={{width: 180, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+        <div style={{display: 'flex', gap: '0.5em'}}>
+          <button className="btn" style={{width: 120, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+        </div>
       </div>
       {puedeEditar() && modo === 'ver' && (
         <div style={{marginBottom: '1em', display: 'flex', gap: '1em'}}>
@@ -108,9 +118,6 @@ export default function VistaUsuarios() {
             <tr>
               <td></td>
               <td><input value={nuevoUsuario.GAFETE} onChange={e => setNuevoUsuario(u => ({...u, GAFETE: e.target.value}))} /></td>
-              <td><input value={nuevoUsuario.NOMBRE} onChange={e => setNuevoUsuario(u => ({...u, NOMBRE: e.target.value}))} /></td>
-              <td><input value={nuevoUsuario.DEPARTAMENTO} onChange={e => setNuevoUsuario(u => ({...u, DEPARTAMENTO: e.target.value}))} /></td>
-              <td><input value={nuevoUsuario.RUTA_MAQUINA} onChange={e => setNuevoUsuario(u => ({...u, RUTA_MAQUINA: e.target.value}))} /></td>
               <td><input value={nuevoUsuario.TIPO_USUARIO} onChange={e => setNuevoUsuario(u => ({...u, TIPO_USUARIO: e.target.value}))} /></td>
               <td>
                 <button className="btn" onClick={handleGuardar}>Guardar</button>

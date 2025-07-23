@@ -28,20 +28,21 @@ export default function Login() {
   };
 
   return (
-    <div className="container" style={{maxWidth: 400, margin: '4rem auto'}}>
+    <div className="container responsive-login">
       <h1 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>Inicio de sesión</h1>
-      <form onSubmit={handleLogin}>
-        <label htmlFor="gafete">Escanea el código de barras del gafete:</label>
+      <form className="form-login" onSubmit={handleLogin}>
+        <label htmlFor="gafete" className="label-login">Escanea el código de barras del gafete:</label>
         <input
           id="gafete"
           type="text"
           value={gafeteScan}
           onChange={e => setGafeteScan(e.target.value)}
-          placeholder="CF60507586"
           autoFocus
+          className="input-login"
+          placeholder="Escanea o escribe tu gafete"
         />
-        <button type="submit" className="btn" style={{marginTop: '1em', width: '100%'}}>Ingresar</button>
-        {error && <div style={{color: 'red', marginTop: '1em'}}>{error}</div>}
+        <button type="submit" className="btn btn-login">Ingresar</button>
+        {error && <div className="error-login">{error}</div>}
       </form>
     </div>
   );

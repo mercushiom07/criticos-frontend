@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { getUsuario } from './db';
-import { getHistorial } from './db';
+import { useNavigate } from 'react-router-dom';
+import { getUsuario, getHistorial, limpiarGafete } from './db';
 
 const columns = [
   'ID', 'FECHA', 'LINEA', 'LCODE', 'CIRCUITO', 'COLOR', 'MAQUINA', 'RUTA', 'DESTINO', 'VOLUMEN', 'MAX', 'MIN', 'PZAS', 'ESTATUS', 'GAFETE'
 ];
 
 export default function TablaHistorial() {
+  const navigate = useNavigate();
   const [historial, setHistorial] = useState([]);
   const [nombreUsuario, setNombreUsuario] = useState('');
   const [usuarioActivo, setUsuarioActivo] = useState(null);
   useEffect(() => {
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => {
+      getUsuario(limpiarGafete(gafete)).then(u => {
         setNombreUsuario(u?.NOMBRE || '');
         setUsuarioActivo(u);
       });
     }
   }, []);
   const handleIrMenu = () => {
-    window.location.href = '/menu-metodos';
+    navigate('/menu-metodos');
   };
   const [filters, setFilters] = useState({});
 
@@ -51,12 +52,15 @@ export default function TablaHistorial() {
   );
 
   return (
-    <div className="container" style={{minWidth: '1360px', minHeight: '720px', padding: '2em', overflowX: 'auto'}}>
+    <div className="responsive-tabla-historial">
       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
         <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
           Usuario: {nombreUsuario}
         </span>
-        <button className="btn" style={{width: 180, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+        <div style={{display: 'flex', gap: '0.5em'}}>
+          <button className="btn" style={{width: 120, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+
+        </div>
       </div>
       <h2 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>Historial de Cambios</h2>
       <div style={{overflowX: 'auto'}}>

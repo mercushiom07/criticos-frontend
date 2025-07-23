@@ -1,11 +1,14 @@
-  const handleIrMenu = () => {
-    window.location.href = '/menu-metodos';
-  };
+// ...existing code...
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './App.css';
-import { getCable } from './db';
+import { getCable, getCables } from './db';
 
 function Localizaciones() {
+  const navigate = useNavigate();
+  const handleIrMenu = () => {
+    navigate('/menu-metodos');
+  };
   const [modo, setModo] = useState('BARRAS'); // 'BARRAS' o 'QR'
   const [inputValor, setInputValor] = useState('');
   const [infoCable, setInfoCable] = useState(null);
@@ -32,7 +35,7 @@ function Localizaciones() {
       setInfoCable(cable || null);
     } else {
       // Buscar por DESTINO (primero que coincida, ignorando mayúsculas/minúsculas)
-      const cables = await (await import('./db')).getCables();
+      const cables = await getCables();
       const cable = cables.find(c => (c.DESTINO || '').toLowerCase() === valor.toLowerCase());
       setInfoCable(cable || null);
     }

@@ -1,7 +1,13 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import { debugCheckGafete, addUsuario } from './db';
 
 export default function DebugUsuario() {
+  const navigate = useNavigate();
+  const handleCerrarSesion = () => {
+    localStorage.removeItem('gafete');
+    navigate('/login', { replace: true });
+  };
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
@@ -20,21 +26,24 @@ export default function DebugUsuario() {
       GAFETE: '60507586',
       DEPARTAMENTO: 'METODOS',
       RUTA_MAQUINA: 'INGENIERIA',
-      TIPO_USUARIO: 'ADMINISTRADOR'
+      TIPO_USUARIO: 'ADMIN'
     });
     await checkUsuario();
     alert('Usuario agregado');
   }
 
   return (
-    <div style={{padding: '2em'}}>
-      <h2>Verificación de usuario por gafete</h2>
-      <div>
-        <button onClick={handleAddUsuario} style={{marginBottom: '1em'}}>Agregar usuario Isaias Uribe</button>
+    <div className="responsive-debug">
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
+        <h2 className="debug-title">Verificación de usuario por gafete</h2>
+        <button className="btn" style={{background: '#d32f2f'}} onClick={handleCerrarSesion}>Cerrar sesión</button>
+      </div>
+      <div className="debug-content">
+        <button className="btn debug-btn" onClick={handleAddUsuario}>Agregar usuario Isaias Uribe</button>
         {usuario ? (
-          <pre>{JSON.stringify(usuario, null, 2)}</pre>
+          <pre className="debug-pre">{JSON.stringify(usuario, null, 2)}</pre>
         ) : (
-          <span>No se encontró el usuario con gafete 60507586.</span>
+          <span className="debug-msg">No se encontró el usuario con gafete 60507586.</span>
         )}
       </div>
     </div>

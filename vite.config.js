@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-// Cambia 'criticos-app' por el nombre de tu repositorio en GitHub
-export default defineConfig({
-  base: '/criticos-app/',
+// Cambia 'criticos' por el nombre de tu repositorio en GitHub
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/criticos/' : '/',
   plugins: [
     react(),
     VitePWA({
@@ -34,4 +34,7 @@ export default defineConfig({
       }
     })
   ],
-})
+  server: {
+    port: 3000 // Cambia este valor al puerto que desees
+  }
+}));

@@ -1,19 +1,20 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { getUsuario } from './db';
+import { getUsuario, limpiarGafete } from './db';
 
 export default function MenuMetodos() {
+  const navigate = useNavigate();
   const [usuario, setUsuario] = useState(null);
   useEffect(() => {
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => setUsuario(u));
+      getUsuario(limpiarGafete(gafete)).then(u => setUsuario(u));
     }
   }, []);
   const handleCerrarSesion = () => {
     localStorage.removeItem('gafete');
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
 
   // Matriz de accesos

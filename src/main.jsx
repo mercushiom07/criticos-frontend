@@ -14,11 +14,11 @@ import VistaUsuarios from './VistaUsuarios';
 import TablaDisparos from './TablaDisparos';
 import Localizaciones from './Localizaciones';
       <Route path="/tabla-disparos" element={<TablaDisparos />} />
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<App />} />
@@ -32,6 +32,6 @@ createRoot(document.getElementById('root')).render(
         <Route path="/tabla-historial" element={<TablaHistorial />} />
         <Route path="/localizaciones" element={<Localizaciones />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   </StrictMode>
 );

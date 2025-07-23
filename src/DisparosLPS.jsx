@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import './App.css';
-import { addDisparo, addHistorial, getCable, getUsuario } from './db';
-import { Link } from 'react-router-dom';
+import { addDisparo, addHistorial, getCable, getUsuario, limpiarGafete, getDisparos } from './db';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 const lineas = [
@@ -21,11 +21,12 @@ function DisparosLPS() {
     // Obtener nombre del usuario activo
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => setNombreUsuario(u?.NOMBRE || ''));
+      getUsuario(limpiarGafete(gafete)).then(u => setNombreUsuario(u?.NOMBRE || ''));
     }
   }, []);
+  const navigate = useNavigate();
   const handleIrMenu = () => {
-    window.location.href = '/menu-metodos';
+    navigate('/menu-metodos');
   };
   const [lcode, setLcode] = useState('');
   const [infoCable, setInfoCable] = useState(null);
@@ -78,8 +79,15 @@ function DisparosLPS() {
 
   const handleRegistrar = async () => {
     if (!infoCable) return;
+    // Validar duplicado
+    const disparos = await getDisparos();
+    const existe = disparos.some(d => (d.LCODE || '').toUpperCase() === (infoCable.lcode || '').toUpperCase() && (d.LINEA || '').toUpperCase() === (linea || '').toUpperCase());
+    if (existe) {
+      alert('Este LCODE ya está disparado en esta línea.');
+      return;
+    }
     // Siempre usa el usuario activo de la sesión
-    const gafeteActivo = localStorage.getItem('gafete') || '';
+    const gafeteActivo = limpiarGafete(localStorage.getItem('gafete') || '');
     const disparo = {
       LINEA: linea,
       PIEZAS_RESTANTES: Number(piezasRestantes),
@@ -92,7 +100,8 @@ function DisparosLPS() {
       DESTINO: infoCable.destino,
       VOLUMEN_DIARIO: infoCable.volumenDiario,
       MAXIMO: infoCable.maximo,
-      MINIMO: infoCable.minimo
+      MINIMO: infoCable.minimo,
+      ESTATUS: 'CRITICO'
     };
     await addDisparo(disparo);
     await addHistorial({

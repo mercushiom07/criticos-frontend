@@ -1,54 +1,7 @@
-
-  // Exportar a CSV
-  const handleExportar = () => {
-    if (!filteredDisparos || !filteredDisparos.length) return;
-    const csvRows = [];
-    csvRows.push(columns.join(','));
-    filteredDisparos.forEach(d => {
-      const row = columns.map(col => {
-        let val = '';
-        switch (col) {
-          case 'ID': val = d.id || ''; break;
-          case 'LINEA': val = d.LINEA || ''; break;
-          case 'LCODE': val = d.LCODE || ''; break;
-          case 'CIRCUITO': val = d.CIRCUITO || ''; break;
-          case 'COLOR': val = d.COLOR || ''; break;
-          case 'MAQUINA': val = d.MAQUINA_CORTE || d.MAQUINA || ''; break;
-          case 'RUTA': val = d.RUTA_CORTE || d.RUTA || ''; break;
-          case 'DESTINO': val = d.DESTINO || ''; break;
-          case 'VOLUMEN': val = d.VOLUMEN_DIARIO || d.VOLUMEN || ''; break;
-          case 'MAX': val = d.MAXIMO || d.MAX || ''; break;
-          case 'MIN': val = d.MINIMO || d.MIN || ''; break;
-          case 'PZAS': val = d.PIEZAS_RESTANTES || d.PZAS || ''; break;
-          case 'FECHA': val = d.FECHA || ''; break;
-          case 'ESTATUS': val = d.ESTATUS || ''; break;
-          default: val = d[col] || d[col.toUpperCase()] || d[col.toLowerCase()] || ''; break;
-        }
-        return '"' + String(val).replace(/"/g, '""') + '"';
-      });
-      csvRows.push(row.join(','));
-    });
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    // Personalizar nombre del archivo
-    const now = new Date();
-    const pad = n => n.toString().padStart(2, '0');
-    const fecha = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
-    const hora = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    const filename = `CRITICOS-${fecha}-${hora}.csv`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 import React, { useEffect, useState } from 'react';
-import { getDisparos, addHistorial, getUsuario } from './db';
+import { useNavigate } from 'react-router-dom';
+import { getDisparos, addHistorial, getUsuario, updateDisparo, deleteDisparo, limpiarGafete } from './db';
 const ESTATUS_OPCIONES = ['CRITICO', 'EN PROCESO', 'CORTADO', 'SURTIDO', 'BAJO VOLUMEN'];
-
 const columns = [
   'ID', 'LINEA', 'LCODE', 'CIRCUITO', 'COLOR', 'MAQUINA', 'RUTA', 'DESTINO', 'VOLUMEN', 'MAX', 'MIN', 'PZAS', 'FECHA', 'ESTATUS'
 ];
@@ -67,7 +20,7 @@ export default function TablaDisparos() {
     // Obtener nombre y datos del usuario activo
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => {
+      getUsuario(limpiarGafete(gafete)).then(u => {
         setNombreUsuario(u?.NOMBRE || '');
         setUsuarioActivo(u);
       });
@@ -159,24 +112,19 @@ export default function TablaDisparos() {
 
   async function handleCambiarEstatus() {
     if (!estatusNuevo || selected.length === 0) return;
-    // Actualizar estatus en disparos y agregar a historial usando el usuario activo
-    const db = await import('./db');
-    const dbInstance = await db.dbPromise;
-    const gafeteActivo = localStorage.getItem('gafete') || '';
+    const gafeteActivo = limpiarGafete(localStorage.getItem('gafete') || '');
     await Promise.all(selected.map(async (id) => {
-      const disparo = await dbInstance.get('disparos', id);
+      // Buscar disparo actual
+      const disparo = disparos.find(d => d.id === id);
       if (disparo) {
         if (estatusNuevo === 'SURTIDO') {
-          // Eliminar de disparos
-          await dbInstance.delete('disparos', id);
+          await deleteDisparo(id);
         } else {
-          // Actualizar estatus
-          const nuevo = { ...disparo, ESTATUS: estatusNuevo };
-          await dbInstance.put('disparos', nuevo);
+          await updateDisparo(id, { ESTATUS: estatusNuevo });
         }
         // Agregar al historial (sin id)
         const { id: _, ...historialData } = { ...disparo, ESTATUS: estatusNuevo };
-        await dbInstance.add('historial', {
+        await addHistorial({
           ...historialData,
           FECHA: new Date().toLocaleString(),
           GAFETE: gafeteActivo
@@ -189,8 +137,9 @@ export default function TablaDisparos() {
     alert('Estatus actualizado y cambios registrados en historial.');
   }
 
+  const navigate = useNavigate();
   const handleIrMenu = () => {
-    window.location.href = '/menu-metodos';
+    navigate('/menu-metodos');
   };
 
   return (

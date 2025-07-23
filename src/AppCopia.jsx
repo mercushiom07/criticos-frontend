@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import './App.css';
-import { addDisparo, addHistorial, getCable, getUsuario } from './db';
+import { addDisparo, addHistorial, getCable, getUsuario, limpiarGafete } from './db';
 import { Link } from 'react-router-dom';
 // ...existing code...
 
@@ -24,7 +24,7 @@ function AppCopia() {
     // Obtener nombre del usuario activo
     const gafete = localStorage.getItem('gafete');
     if (gafete) {
-      getUsuario(gafete).then(u => setNombreUsuario(u?.NOMBRE || ''));
+      getUsuario(limpiarGafete(gafete)).then(u => setNombreUsuario(u?.NOMBRE || ''));
     }
   }, []);
   const handleCerrarSesion = () => {
@@ -41,7 +41,7 @@ function AppCopia() {
     if (!codigo) return null;
     // Elimina el prefijo hasta el primer guion, si existe
     const lcodeSinPrefijo = codigo.includes('-') ? codigo.split('-')[1] : codigo;
-    const cable = await getCable(lcodeSinPrefijo);
+      const cable = await getCable(lcodeSinPrefijo);
     if (!cable) return null;
     return {
       lcode: cable.LCODE,
@@ -82,7 +82,7 @@ function AppCopia() {
 
   const handleRegistrar = async () => {
     if (!infoCable) return;
-    const gafete = localStorage.getItem('gafete') || '';
+    const gafete = limpiarGafete(localStorage.getItem('gafete') || '');
     const disparo = {
       LINEA: linea,
       PIEZAS_RESTANTES: Number(piezasRestantes),
@@ -95,7 +95,8 @@ function AppCopia() {
       DESTINO: infoCable.destino,
       VOLUMEN_DIARIO: infoCable.volumenDiario,
       MAXIMO: infoCable.maximo,
-      MINIMO: infoCable.minimo
+      MINIMO: infoCable.minimo,
+      ESTATUS: 'CRITICO'
     };
     await addDisparo(disparo);
     await addHistorial({
