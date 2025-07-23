@@ -19,12 +19,19 @@
 }
 /* Estilos responsivos para VistaUsuarios */
 .responsive-vista-usuarios {
-  max-width: 900px;
+/* Ajuste responsivo para root */
+#root {
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 2em 1em 2em 1em;
-  min-height: 100vh;
-  background: #fff;
-  box-shadow: 0 0 8px #e0e0e0;
+  padding: 2rem;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  #root {
+    max-width: 100vw;
+    padding: 0.5em 0.2em;
+  }
+}
   border-radius: 0.5em;
   display: flex;
   flex-direction: column;
@@ -36,29 +43,48 @@
     padding: 1em 0.2em 1em 0.2em;
   }
 }
-/* Estilos responsivos para DebugUsuario (móvil y escritorio) */
-.responsive-debug {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 2em 1em 2em 1em;
-  min-height: 100vh;
+/* Contenedor principal responsivo */
+.container {
+  min-width: 0;
+  min-height: 60vh;
+  max-width: 100vw;
+  margin: 2rem auto;
+  padding: 2rem;
   background: #fff;
-  box-shadow: 0 0 8px #e0e0e0;
-  border-radius: 0.5em;
-  display: flex;
-  flex-direction: column;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow-x: auto;
+}
+@media (max-width: 600px) {
+  .container {
+    padding: 0.5em 0.2em;
+    min-width: 0;
+    min-height: 60vh;
+    max-width: 100vw;
+  }
+}
   justify-content: flex-start;
   align-items: center;
 }
 .debug-title {
   color: #1976d2;
   text-align: center;
-  margin-bottom: 1.5em;
-  font-size: 1.4em;
-}
-.debug-content {
+table, .admin-table {
   width: 100%;
-  display: flex;
+  border-collapse: collapse;
+  margin-top: 2rem;
+  font-size: 1rem;
+  table-layout: auto;
+}
+@media (max-width: 600px) {
+  table, .admin-table {
+    display: block;
+    overflow-x: auto;
+    width: 100vw;
+    font-size: 0.92rem;
+    min-width: 600px;
+  }
+}
   flex-direction: column;
   align-items: center;
 }
@@ -67,14 +93,21 @@
   background: #1976d2;
   color: #fff;
   font-size: 1em;
-  border-radius: 0.4em;
-  padding: 0.7em 1.2em;
+input, select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.2rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  box-sizing: border-box;
 }
-.debug-pre {
-  background: #f5f7fa;
-  border-radius: 0.4em;
-  padding: 1em;
-  font-size: 1em;
+@media (max-width: 600px) {
+  input, select {
+    font-size: 0.98rem;
+    padding: 0.4rem 0.2rem;
+  }
+}
   width: 100%;
   max-width: 480px;
   overflow-x: auto;
@@ -86,17 +119,24 @@
   padding: 0.7em 1em;
   text-align: center;
   font-weight: bold;
-  margin-top: 0.5em;
+.btn {
+  width: 100%;
+  padding: 0.7rem;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  box-sizing: border-box;
 }
 @media (max-width: 600px) {
-  .responsive-debug {
-    max-width: 100vw;
-    padding: 1em 0.2em 1em 0.2em;
+  .btn {
+    font-size: 1rem;
+    padding: 0.6em 0.2em;
   }
-  .debug-pre {
-    font-size: 0.95em;
-    padding: 0.7em;
-  }
+}
 }
 /* Estilos responsivos para pantalla de login móvil full HD+ vertical (1080x2400) */
 .responsive-login {
@@ -109,18 +149,19 @@
   border-radius: 0.5em;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+@media (max-width: 900px) {
+  .responsive-tabla-usuarios {
+    max-width: 100vw;
+    padding: 1em 0.2em 1em 0.2em;
+  }
 }
-.form-login {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2em;
+@media (max-width: 600px) {
+  .responsive-tabla-usuarios {
+    padding: 0.5em 0.1em;
+    min-width: 0;
+    min-height: 60vh;
+  }
 }
-.label-login {
-  font-weight: bold;
-  color: #1976d2;
-  margin-bottom: 0.3em;
-  font-size: 1.1em;
 }
 .input-login {
   padding: 0.8em 1em;
@@ -133,18 +174,19 @@
   width: 100%;
   background: #1976d2;
   color: #fff;
-  font-size: 1.1em;
-  border-radius: 0.4em;
-  padding: 0.7em 0;
-  margin-top: 0.5em;
+@media (max-width: 900px) {
+  .responsive-vista-usuarios {
+    max-width: 100vw;
+    padding: 1em 0.2em 1em 0.2em;
+  }
 }
-.error-login {
-  color: #d32f2f;
-  background: #ffeaea;
-  border-radius: 0.4em;
-  padding: 0.7em 1em;
-  text-align: center;
-  font-weight: bold;
+@media (max-width: 600px) {
+  .responsive-vista-usuarios {
+    padding: 0.5em 0.1em;
+    min-width: 0;
+    min-height: 60vh;
+  }
+}
   margin-top: 0.5em;
 }
 @media (max-width: 480px) {
@@ -157,18 +199,19 @@
     padding: 0.6em 0.2em;
   }
 }
-/* Estilos responsivos para pantalla móvil full HD+ vertical (1080x2400) */
-.responsive-critico {
-  max-width: 430px;
-  margin: 0 auto;
-  padding: 1.5em 0.5em 2em 0.5em;
-  min-height: 100vh;
-  background: #fff;
-  box-shadow: 0 0 8px #e0e0e0;
-  border-radius: 0.5em;
-  font-size: 1.1em;
+@media (max-width: 900px) {
+  .responsive-tabla-historial {
+    max-width: 100vw;
+    padding: 1em 0.2em 1em 0.2em;
+  }
 }
-.header-critico {
+@media (max-width: 600px) {
+  .responsive-tabla-historial {
+    padding: 0.5em 0.1em;
+    min-width: 0;
+    min-height: 60vh;
+  }
+}
   display: flex;
   justify-content: space-between;
   align-items: center;
