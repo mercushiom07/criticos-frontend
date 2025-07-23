@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 // Cambia 'criticos' por el nombre de tu repositorio en GitHub
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/criticos/' : '/',
+  base: '/',
   plugins: [
     react(),
     VitePWA({
