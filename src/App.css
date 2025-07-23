@@ -10,7 +10,6 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-}
 @media (max-width: 900px) {
   .responsive-tabla-usuarios {
     max-width: 100vw;
@@ -63,12 +62,13 @@
     max-width: 100vw;
   }
 }
-  justify-content: flex-start;
-  align-items: center;
 }
+
 .debug-title {
   color: #1976d2;
   text-align: center;
+}
+
 table, .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -76,6 +76,7 @@ table, .admin-table {
   font-size: 1rem;
   table-layout: auto;
 }
+
 @media (max-width: 600px) {
   table, .admin-table {
     display: block;
@@ -85,14 +86,14 @@ table, .admin-table {
     min-width: 600px;
   }
 }
-  flex-direction: column;
-  align-items: center;
-}
+
 .debug-btn {
   margin-bottom: 1em;
   background: #1976d2;
   color: #fff;
   font-size: 1em;
+}
+
 input, select {
   width: 100%;
   padding: 0.5rem;
@@ -102,16 +103,14 @@ input, select {
   font-size: 1rem;
   box-sizing: border-box;
 }
+
 @media (max-width: 600px) {
   input, select {
     font-size: 0.98rem;
     padding: 0.4rem 0.2rem;
   }
 }
-  width: 100%;
-  max-width: 480px;
-  overflow-x: auto;
-}
+
 .debug-msg {
   color: #d32f2f;
   background: #ffeaea;
@@ -119,6 +118,8 @@ input, select {
   padding: 0.7em 1em;
   text-align: center;
   font-weight: bold;
+}
+
 .btn {
   width: 100%;
   padding: 0.7rem;
@@ -131,12 +132,12 @@ input, select {
   margin-top: 1rem;
   box-sizing: border-box;
 }
+
 @media (max-width: 600px) {
   .btn {
     font-size: 1rem;
     padding: 0.6em 0.2em;
   }
-}
 }
 /* Estilos responsivos para pantalla de login móvil full HD+ vertical (1080x2400) */
 .responsive-login {
@@ -212,11 +213,7 @@ input, select {
     min-height: 60vh;
   }
 }
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1em;
-}
+/* Removed invalid CSS properties that were outside of a selector */
 .usuario-critico {
   font-weight: bold;
   color: #1976d2;
