@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
+import HomeRouter from './HomeRouter';
 import DisparosLPS from './DisparosLPS';
 import AdminCables from './AdminCables';
 import Login from './Login';
@@ -21,7 +22,8 @@ createRoot(document.getElementById('root')).render(
     <HashRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<HomeRouter />} />
+        <Route path="/disparo-critico" element={<App />} />
         <Route path="/admin-cables" element={<AdminCables />} />
         <Route path="/disparos-lps" element={<DisparosLPS />} />
         <Route path="/menu-metodos" element={<MenuMetodos />} />

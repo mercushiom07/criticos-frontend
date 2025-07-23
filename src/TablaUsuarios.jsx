@@ -1,22 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getUsuario, getUsuarios, addUsuario, deleteUsuario, limpiarGafete } from './db';
+import { useEffect, useState } from 'react';
+import { getUsuarios, deleteUsuario } from './db';
 
 export default function TablaUsuarios() {
-  const navigate = useNavigate(); // Solo una vez al inicio del componente
   const [usuarios, setUsuarios] = useState([]);
-  const [nombreUsuario, setNombreUsuario] = useState('');
-  useEffect(() => {
-    const gafete = localStorage.getItem('gafete');
-    if (gafete) {
-      getUsuario(limpiarGafete(gafete)).then(u => setNombreUsuario(u?.NOMBRE || ''));
-    }
-  }, []);
-  const handleIrMenu = () => {
-    navigate('/menu-metodos');
-  };
-  const [form, setForm] = useState({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' });
-  const [editGafete, setEditGafete] = useState(null);
+  const [filtro, setFiltro] = useState('');
 
   useEffect(() => {
     cargarUsuarios();
@@ -27,71 +14,58 @@ export default function TablaUsuarios() {
     setUsuarios(lista);
   }
 
-  async function handleAddOrEdit(e) {
-    e.preventDefault();
-    await addUsuario(form);
-    setForm({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' });
-    setEditGafete(null);
-    await cargarUsuarios();
-  }
-
-  function handleEdit(usuario) {
-    setForm(usuario);
-    setEditGafete(usuario.GAFETE);
-  }
-
-  async function handleDelete(gafete) {
+  async function handleEliminar(gafete) {
     await deleteUsuario(gafete);
-    await cargarUsuarios();
+    cargarUsuarios();
   }
+
+  const usuariosFiltrados = usuarios.filter(u =>
+    u.NOMBRE.toLowerCase().includes(filtro.toLowerCase()) ||
+    u.GAFETE.toLowerCase().includes(filtro.toLowerCase())
+  );
 
   return (
-    <div className="responsive-tabla-usuarios">
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
-        <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
-          Usuario: {nombreUsuario}
-        </span>
-        <div style={{display: 'flex', gap: '0.5em'}}>
-          <button className="btn" style={{width: 120, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: 0 }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
+        <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Usuarios</h2>
+        <div style={{ marginBottom: 16 }}>
+          <input
+            type="text"
+            placeholder="Filtrar por nombre o gafete"
+            value={filtro}
+            onChange={e => setFiltro(e.target.value)}
+            style={{ width: 300, padding: 8, fontSize: 14, borderRadius: 4, border: '1px solid #ccc' }}
+          />
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', background: '#fff', fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th style={{ border: '1px solid #ccc', padding: 4 }}>Gafete</th>
+                <th style={{ border: '1px solid #ccc', padding: 4 }}>Nombre</th>
+                <th style={{ border: '1px solid #ccc', padding: 4 }}>Departamento</th>
+                <th style={{ border: '1px solid #ccc', padding: 4 }}>Ruta/Máquina</th>
+                <th style={{ border: '1px solid #ccc', padding: 4 }}>Tipo</th>
+                <th style={{ border: '1px solid #ccc', padding: 4 }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usuariosFiltrados.map(u => (
+                <tr key={u.GAFETE}>
+                  <td style={{ border: '1px solid #ccc', padding: 4 }}>{u.GAFETE}</td>
+                  <td style={{ border: '1px solid #ccc', padding: 4 }}>{u.NOMBRE}</td>
+                  <td style={{ border: '1px solid #ccc', padding: 4 }}>{u.DEPARTAMENTO}</td>
+                  <td style={{ border: '1px solid #ccc', padding: 4 }}>{u.RUTA_MAQUINA}</td>
+                  <td style={{ border: '1px solid #ccc', padding: 4 }}>{u.TIPO_USUARIO}</td>
+                  <td style={{ border: '1px solid #ccc', padding: 4 }}>
+                    <button style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }} onClick={() => handleEliminar(u.GAFETE)}>Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-      <h2>Tabla de Usuarios</h2>
-      <form onSubmit={handleAddOrEdit} style={{marginBottom: '2em'}}>
-        <input required placeholder="Nombre" value={form.NOMBRE} onChange={e => setForm(f => ({...f, NOMBRE: e.target.value}))} />{' '}
-        <input required placeholder="Gafete" value={form.GAFETE} onChange={e => setForm(f => ({...f, GAFETE: e.target.value}))} />{' '}
-        <input required placeholder="Departamento" value={form.DEPARTAMENTO} onChange={e => setForm(f => ({...f, DEPARTAMENTO: e.target.value}))} />{' '}
-        <input required placeholder="Ruta/Máquina" value={form.RUTA_MAQUINA} onChange={e => setForm(f => ({...f, RUTA_MAQUINA: e.target.value}))} />{' '}
-        <input required placeholder="Tipo de usuario" value={form.TIPO_USUARIO} onChange={e => setForm(f => ({...f, TIPO_USUARIO: e.target.value}))} />{' '}
-        <button type="submit">{editGafete ? 'Modificar' : 'Agregar'} usuario</button>
-        {editGafete && <button type="button" onClick={() => { setForm({ NOMBRE: '', GAFETE: '', DEPARTAMENTO: '', RUTA_MAQUINA: '', TIPO_USUARIO: '' }); setEditGafete(null); }}>Cancelar edición</button>}
-      </form>
-      <table border="1" cellPadding="6" style={{width: '100%', background: '#fff'}}>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Gafete</th>
-            <th>Departamento</th>
-            <th>Ruta/Máquina</th>
-            <th>Tipo de usuario</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {usuarios.map(u => (
-            <tr key={u.GAFETE}>
-              <td>{u.NOMBRE}</td>
-              <td>{u.GAFETE}</td>
-              <td>{u.DEPARTAMENTO}</td>
-              <td>{u.RUTA_MAQUINA}</td>
-              <td>{u.TIPO_USUARIO}</td>
-              <td>
-                <button onClick={() => handleEdit(u)}>Modificar</button>{' '}
-                <button onClick={() => handleDelete(u.GAFETE)}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

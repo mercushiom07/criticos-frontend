@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDisparos, addHistorial, getUsuario, updateDisparo, deleteDisparo, limpiarGafete } from './db';
+
 const ESTATUS_OPCIONES = ['CRITICO', 'EN PROCESO', 'CORTADO', 'SURTIDO', 'BAJO VOLUMEN'];
 const columns = [
   'ID', 'LINEA', 'LCODE', 'CIRCUITO', 'COLOR', 'MAQUINA', 'RUTA', 'DESTINO', 'VOLUMEN', 'MAX', 'MIN', 'PZAS', 'FECHA', 'ESTATUS'
@@ -11,9 +12,9 @@ export default function TablaDisparos() {
   const [filters, setFilters] = useState({});
   const [selected, setSelected] = useState([]);
   const [estatusNuevo, setEstatusNuevo] = useState('CRITICO');
-  const [gafeteCambio, setGafeteCambio] = useState(() => localStorage.getItem('gafete') || '');
   const [nombreUsuario, setNombreUsuario] = useState('');
   const [usuarioActivo, setUsuarioActivo] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     cargarDisparos();
@@ -32,10 +33,13 @@ export default function TablaDisparos() {
     setDisparos(lista);
   }
 
+  const handleIrMenu = () => {
+    navigate('/menu-metodos');
+  };
+
   const handleFilterChange = (col, value) => {
     setFilters(f => ({ ...f, [col]: value }));
   };
-
 
   let filteredDisparos = disparos;
   // Si es usuario de MATERIALES, filtrar por RUTA
@@ -51,7 +55,7 @@ export default function TablaDisparos() {
     })
   );
 
-  // Exportar a CSV (única función)
+  // Exportar a CSV
   const handleExportar = () => {
     if (!filteredDisparos || !filteredDisparos.length) return;
     const csvRows = [];
@@ -83,7 +87,6 @@ export default function TablaDisparos() {
     const csvContent = csvRows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    // Personalizar nombre del archivo
     const now = new Date();
     const pad = n => n.toString().padStart(2, '0');
     const fecha = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
@@ -114,113 +117,104 @@ export default function TablaDisparos() {
     if (!estatusNuevo || selected.length === 0) return;
     const gafeteActivo = limpiarGafete(localStorage.getItem('gafete') || '');
     await Promise.all(selected.map(async (id) => {
-      // Buscar disparo actual
       const disparo = disparos.find(d => d.id === id);
       if (disparo) {
         if (estatusNuevo === 'SURTIDO') {
-          await deleteDisparo(id);
-        } else {
-          await updateDisparo(id, { ESTATUS: estatusNuevo });
+          await addHistorial({ ...disparo, ESTATUS: 'SURTIDO', GAFETE: gafeteActivo, FECHA: new Date().toLocaleString() });
         }
-        // Agregar al historial (sin id)
-        const { id: _, ...historialData } = { ...disparo, ESTATUS: estatusNuevo };
-        await addHistorial({
-          ...historialData,
-          FECHA: new Date().toLocaleString(),
-          GAFETE: gafeteActivo
-        });
+        await updateDisparo(id, { ...disparo, ESTATUS: estatusNuevo });
       }
     }));
     setSelected([]);
-    setGafeteCambio('');
-    await cargarDisparos();
-    alert('Estatus actualizado y cambios registrados en historial.');
+    setEstatusNuevo('CRITICO');
+    cargarDisparos();
   }
 
-  const navigate = useNavigate();
-  const handleIrMenu = () => {
-    navigate('/menu-metodos');
-  };
+  async function handleEditar(d) {
+    alert('Función de edición no implementada');
+  }
+
+  async function handleEliminar(id) {
+    await deleteDisparo(id);
+    cargarDisparos();
+  }
 
   return (
-    <div className="container" style={{minWidth: '1360px', minHeight: '720px', padding: '2em', overflowX: 'auto'}}>
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
-        <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
-          Usuario: {nombreUsuario || gafeteCambio}
-        </span>
-        <button className="btn" style={{width: 180, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
-      </div>
-      <h2 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>Registros de Disparos</h2>
-      <div style={{marginBottom: '1em', display: 'flex', gap: '1em', alignItems: 'center'}}>
-        <label><b>Cambiar estatus a:</b></label>
-        <select value={estatusNuevo} onChange={e => setEstatusNuevo(e.target.value)}>
-          {ESTATUS_OPCIONES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-        <button className="btn" style={{width: 180}} onClick={handleCambiarEstatus} disabled={selected.length === 0 || !gafeteCambio}>
-          Cambiar estatus
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: 0, position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 16, right: 32, zIndex: 10 }}>
+        <button onClick={handleIrMenu} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, padding: '8px 20px', fontSize: 15, cursor: 'pointer' }}>
+          Regresar al menú
         </button>
-        <div style={{flex: 1, display: 'flex', justifyContent: 'flex-end'}}>
-          <button className="btn" style={{width: 180, background: '#388e3c'}} onClick={handleExportar}>
-            Exportar tabla
-          </button>
-        </div>
       </div>
-      <div style={{overflowX: 'auto'}}>
-      <table className="admin-table" style={{minWidth: '1300px', tableLayout: 'fixed', wordBreak: 'break-word', fontSize: '12px'}}>
-        <thead>
-          <tr>
-            <th>
-              <input type="checkbox" checked={selected.length === filteredDisparos.length && filteredDisparos.length > 0} onChange={e => handleSelectAll(e.target.checked)} />
-            </th>
-            {columns.map(col => <th key={col} style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{col}</th>)}
-          </tr>
-          <tr>
-            <th></th>
-            {columns.map(col => (
-              <th key={col} style={{padding: 0}}>
-                <input
-                  style={{
-                    width: '100%',
-                    fontSize: '0.95em',
-                    boxSizing: 'border-box',
-                    border: 'none',
-                    outline: 'none',
-                    padding: '0.4em 0.2em',
-                    background: '#e3eafc',
-                    height: '2em'
-                  }}
-                  placeholder={`Filtrar ${col}`}
-                  value={filters[col] || ''}
-                  onChange={e => handleFilterChange(col, e.target.value)}
-                />
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredDisparos.map(d => (
-            <tr key={d.id} style={{background: selected.includes(d.id) ? '#e3eafc' : undefined}}>
-              <td>
-                <input type="checkbox" checked={selected.includes(d.id)} onChange={() => handleSelect(d.id)} />
-              </td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.id}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.LINEA}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.LCODE || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.CIRCUITO || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 100}}>{d.COLOR || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.MAQUINA_CORTE || d.MAQUINA || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.RUTA_CORTE || d.RUTA || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.DESTINO || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.VOLUMEN_DIARIO || d.VOLUMEN || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', width: 55, maxWidth: 55, textAlign: 'center'}}>{d.MAXIMO || d.MAX || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', width: 55, maxWidth: 55, textAlign: 'center'}}>{d.MINIMO || d.MIN || ''}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', width: 55, maxWidth: 55, textAlign: 'center'}}>{d.PIEZAS_RESTANTES || d.PZAS}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 180}}>{d.FECHA}</td>
-              <td style={{whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: 120}}>{d.ESTATUS}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <span style={{ fontWeight: 'bold', color: '#1976d2' }}>Usuario: {nombreUsuario}</span>
+        </div>
+        <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Tabla de Disparos</h2>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1200, background: '#fff', fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selected.length === filteredDisparos.length && filteredDisparos.length > 0} onChange={e => handleSelectAll(e.target.checked)} /></th>
+                {columns.map(col => <th key={col} style={{ border: '1px solid #ccc', padding: 4 }}>{col}</th>)}
+                <th>Acciones</th>
+              </tr>
+              <tr>
+                <th></th>
+                {columns.map(col => (
+                  <th key={col} style={{ padding: 0 }}>
+                    <input
+                      style={{ width: '100%', fontSize: 12, boxSizing: 'border-box', height: 24 }}
+                      placeholder={`Filtrar ${col}`}
+                      value={filters[col] || ''}
+                      onChange={e => handleFilterChange(col, e.target.value)}
+                    />
+                  </th>
+                ))}
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDisparos.map(d => (
+                <tr key={d.id}>
+                  <td><input type="checkbox" checked={selected.includes(d.id)} onChange={() => handleSelect(d.id)} /></td>
+                  {columns.map(col => (
+                    <td key={col} style={{ border: '1px solid #ccc', padding: 4 }}>
+                      {
+                        col === 'ID' ? d.id :
+                        col === 'LINEA' ? d.LINEA :
+                        col === 'LCODE' ? d.LCODE :
+                        col === 'CIRCUITO' ? d.CIRCUITO :
+                        col === 'COLOR' ? d.COLOR :
+                        col === 'MAQUINA' ? d.MAQUINA_CORTE || d.MAQUINA :
+                        col === 'RUTA' ? d.RUTA_CORTE || d.RUTA :
+                        col === 'DESTINO' ? d.DESTINO :
+                        col === 'VOLUMEN' ? d.VOLUMEN_DIARIO || d.VOLUMEN :
+                        col === 'MAX' ? d.MAXIMO || d.MAX :
+                        col === 'MIN' ? d.MINIMO || d.MIN :
+                        col === 'PZAS' ? d.PIEZAS_RESTANTES || d.PZAS :
+                        col === 'FECHA' ? d.FECHA :
+                        col === 'ESTATUS' ? d.ESTATUS :
+                        d[col] || d[col.toUpperCase()] || d[col.toLowerCase()] || ''
+                      }
+                    </td>
+                  ))}
+                  <td>
+                    <button style={{ marginRight: 8, background: '#ffc107', color: '#333', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }} onClick={() => handleEditar(d)}>Editar</button>
+                    <button style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }} onClick={() => handleEliminar(d.id)}>Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <button style={{ marginRight: 8, background: '#388e3c', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleExportar}>Exportar CSV</button>
+          <select style={{ marginRight: 8, padding: '6px 12px', fontSize: 14 }} value={estatusNuevo} onChange={e => setEstatusNuevo(e.target.value)}>
+            {ESTATUS_OPCIONES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+          <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleCambiarEstatus} disabled={selected.length === 0}>Cambiar estatus</button>
+        </div>
       </div>
     </div>
   );

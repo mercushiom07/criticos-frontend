@@ -1,41 +1,67 @@
-import ImportCSV from './ImportCSV';
-import ListaCables from './ListaCables';
-import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { getUsuario } from './db';
+import { getCables, addCable, deleteCable } from './db';
 
 export default function AdminCables() {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [nombreUsuario, setNombreUsuario] = useState('');
+  const [cables, setCables] = useState([]);
+  const [nuevo, setNuevo] = useState({ LCODE: '', LINEA: '', CIRCUITO: '', COLOR: '', MAQUINA_CORTE: '', RUTA_CORTE: '', DESTINO: '', VOLUMEN_DIARIO: '', MAXIMO: '', MINIMO: '' });
+  const [mensaje, setMensaje] = useState('');
+
   useEffect(() => {
-    const gafete = localStorage.getItem('gafete');
-    if (gafete) {
-      getUsuario(gafete).then(u => setNombreUsuario(u?.NOMBRE || ''));
-    }
+    cargarCables();
   }, []);
-  const handleImport = () => setRefreshKey(k => k + 1);
-  const navigate = useNavigate();
-  const handleIrMenu = () => {
-    navigate('/menu-metodos');
-  };
+
+  async function cargarCables() {
+    const lista = await getCables();
+    setCables(lista);
+  }
+
+  async function handleAgregar(e) {
+    e.preventDefault();
+    setMensaje('');
+    if (!nuevo.LCODE || !nuevo.LINEA) {
+      setMensaje('LCODE y LINEA son obligatorios');
+      return;
+    }
+    await addCable(nuevo);
+    setMensaje('Cable agregado');
+    setNuevo({ LCODE: '', LINEA: '', CIRCUITO: '', COLOR: '', MAQUINA_CORTE: '', RUTA_CORTE: '', DESTINO: '', VOLUMEN_DIARIO: '', MAXIMO: '', MINIMO: '' });
+    cargarCables();
+  }
+
+  async function handleEliminar(lcode) {
+    await deleteCable(lcode);
+    cargarCables();
+  }
 
   return (
-    <div className="container">
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1em'}}>
-        <span style={{fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em'}}>
-          Usuario: {nombreUsuario}
-        </span>
-        <button className="btn" style={{width: 180, background: '#1976d2'}} onClick={handleIrMenu}>Regresar al menú</button>
-      </div>
-      <nav style={{marginBottom: '1em', display: 'flex', justifyContent: 'space-between'}}>
-        <Link to="/" style={{color: '#1976d2', fontWeight: 'bold'}}>Regresar a registro de disparos</Link>
-      </nav>
-      <h1 style={{textAlign: 'center', color: '#1976d2', marginBottom: '1.5em'}}>Administración de Cables</h1>
-      <div className="import-csv">
-        <ImportCSV onImport={handleImport} />
-      </div>
-      <div>
-        <ListaCables tableClass="admin-table" refreshKey={refreshKey} style={{wordBreak: 'break-word', fontSize: '12px'}} columnsOverride={['ID', 'LINEA', 'LCODE', 'CIRCUITO', 'COLOR', 'MAQUINA', 'RUTA', 'DESTINO', 'VOLUMEN', 'MAX', 'MIN', 'PZAS']} />
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: 0 }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
+        <h2 style={{ textAlign: 'center', color: '#1976d2', marginBottom: 24 }}>Administración de Cables</h2>
+        {/* Formulario de alta eliminado */}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', background: '#fff', fontSize: 13 }}>
+            <thead>
+              <tr>
+                {Object.keys(nuevo).map(key => (
+                  <th key={key} style={{ border: '1px solid #ccc', padding: 4 }}>{key}</th>
+                ))}
+                {/* <th style={{ border: '1px solid #ccc', padding: 4 }}>Acciones</th> */}
+              </tr>
+            </thead>
+            <tbody>
+              {cables.map(c => (
+                <tr key={c.LCODE}>
+                  {Object.keys(nuevo).map(key => (
+                    <td key={key} style={{ border: '1px solid #ccc', padding: 4 }}>{c[key]}</td>
+                  ))}
+                  {/* <td style={{ border: '1px solid #ccc', padding: 4 }}>
+                    <button style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }} onClick={() => handleEliminar(c.LCODE)}>Eliminar</button>
+                  </td> */}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
